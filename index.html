@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Генератор узоров</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Генератор узоров</h1>
+      <p class="hint">Рисуй мышкой или пальцем — штрихи отразятся симметрично</p>
+    </header>
+
+    <div class="stage">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label for="symmetry">Симметрия: <span id="symmetryValue">8</span></label>
+        <input type="range" id="symmetry" min="2" max="24" value="8" step="1">
+      </div>
+
+      <div class="control">
+        <label for="brush">Толщина: <span id="brushValue">4</span></label>
+        <input type="range" id="brush" min="1" max="20" value="4" step="1">
+      </div>
+
+      <div class="control colors">
+        <label>Цвет</label>
+        <div class="swatches" id="swatches"></div>
+        <input type="color" id="customColor" value="#ff4d6d" title="Свой цвет">
+      </div>
+
+      <div class="control toggle">
+        <label>
+          <input type="checkbox" id="rainbow">
+          Радуга
+        </label>
+      </div>
+
+      <div class="control buttons">
+        <button id="undoBtn" title="Отменить последний штрих">↩ Отменить</button>
+        <button id="clearBtn" title="Очистить холст">🗑 Очистить</button>
+        <button id="saveBtn" title="Сохранить как PNG">💾 Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
