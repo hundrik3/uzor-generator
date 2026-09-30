@@ -154,6 +154,18 @@
       stem.position.set(X(p.x), 0.27, Z(p.y));
       pinsG.add(stem, m);
       pickables.push(m);
+      if (p.line) {
+        const a = new THREE.Vector3(X(p.line[0]), 0.15, Z(p.line[1])), b = new THREE.Vector3(X(p.line[2]), 0.15, Z(p.line[3]));
+        const lm = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: PIN_COLORS[p.c] }));
+        pinsG.add(lm);
+        [a, b].forEach(v => {
+          const t = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.9, 6), new THREE.MeshBasicMaterial({ color: PIN_COLORS[p.c] }));
+          t.position.set(v.x, 0.45, v.z); pinsG.add(t);
+        });
+        const sp = label(p.v, 0.9, '#1d2330');
+        sp.position.set(X(p.x), 1.3, Z(p.y));
+        pinsG.add(sp);
+      }
     });
     $('pin3d') && (pinsG.visible = $('pin3d').checked);
   }

@@ -79,3 +79,7 @@ th { font-size: 13px; color: var(--muted); font-weight: 600; }
 .hud { position: absolute; left: 10px; top: 10px; max-width: calc(100% - 20px); padding: 6px 10px; border-radius: 7px; background: color-mix(in srgb, var(--card) 88%, transparent); border: 1px solid var(--line); font-size: 14px; pointer-events: none; }
 .hud b { font-variant-numeric: tabular-nums; }
 [hidden] { display: none !important; }
+
+.dim .dl { stroke-width: 2; vector-effect: non-scaling-stroke; fill: none; }
+.dim.ok .dl { stroke: var(--ok); } .dim.chk .dl { stroke: var(--chk); } .dim.unk .dl { stroke: var(--unk); }
+.dim .dt { fill: var(--text); font-weight: 700; paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; font-variant-numeric: tabular-nums; pointer-events: none; }

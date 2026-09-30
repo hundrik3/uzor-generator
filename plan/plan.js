@@ -55,7 +55,7 @@
       return { id: p[0], n: cnt[p[1]], label: PREFIX[p[1]] + cnt[p[1]], sec: p[1], x: p[2], y: p[3],
         v: e.v !== undefined ? e.v : p[4],
         m: e.m !== undefined ? e.m : p[5],
-        c: e.c || p[6] };
+        c: e.c || p[6], line: p[7] || null };
     });
   }
   window.PlanApp = { pins, SEC_KEYS, get section() { return section; } };
@@ -86,6 +86,8 @@
     svg.innerHTML = '';
     base = P.sections[section].view.slice();
     svg.style.aspectRatio = `${base[2]} / ${base[3]}`;
+    svg.style.width = `min(100%, calc(82vh * ${(base[2] / base[3]).toFixed(3)}))`;
+    svg.style.margin = '0 auto';
 
     const photo = el('image', { href: window.PLAN_PHOTO, x: 0, y: 0, width: P.size.w, height: P.size.h, id: 'photo', preserveAspectRatio: 'none' }, svg);
     photo.style.opacity = document.getElementById('photoOpacity').value / 100;
@@ -103,6 +105,17 @@
       });
     });
     Object.values(P.outlines).forEach(o => el('rect', { x: o[0], y: o[1], width: o[2] - o[0], height: o[3] - o[1], class: 'wall' }, gs));
+
+    const gd = el('g', { id: 'dimlayer' }, svg);
+    gd.style.display = document.getElementById('showPins').checked ? '' : 'none';
+    pins().forEach(p => {
+      if (!p.line || (section !== 'all' && p.sec !== section)) return;
+      const g = el('g', { class: 'dim ' + p.c, 'data-id': p.id }, gd);
+      g.dataset.l = p.line.join(',');
+      el('line', { class: 'dl', x1: p.line[0], y1: p.line[1], x2: p.line[2], y2: p.line[3] }, g);
+      el('line', { class: 'dl t1' }, g); el('line', { class: 'dl t2' }, g);
+      const t = el('text', { class: 'dt' }, g); t.textContent = p.v;
+    });
 
     const gp = el('g', { id: 'pinlayer' }, svg);
     gp.style.display = document.getElementById('showPins').checked ? '' : 'none';
@@ -127,6 +140,16 @@
     if (!layer || !cur) return;
     const s = Math.max(0.35, Math.min(1.6, cur[2] / 1500));
     const m = 14 * s;
+    document.querySelectorAll('#dimlayer .dim').forEach(g => {
+      const [x1, y1, x2, y2] = g.dataset.l.split(',').map(Number);
+      const horiz = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
+      const L = 8 * s, t1 = g.querySelector('.t1'), t2 = g.querySelector('.t2'), tx = g.querySelector('.dt');
+      const tick = (t, x, y) => { t.setAttribute('x1', horiz ? x : x - L); t.setAttribute('x2', horiz ? x : x + L); t.setAttribute('y1', horiz ? y - L : y); t.setAttribute('y2', horiz ? y + L : y); };
+      tick(t1, x1, y1); tick(t2, x2, y2);
+      tx.setAttribute('font-size', 24 * s);
+      if (horiz) { tx.setAttribute('x', (x1 + x2) / 2); tx.setAttribute('y', y1 - 11 * s); tx.setAttribute('text-anchor', 'middle'); }
+      else { tx.setAttribute('x', x1 + 10 * s); tx.setAttribute('y', (y1 + y2) / 2 + 5 * s); tx.setAttribute('text-anchor', 'start'); }
+    });
     layer.querySelectorAll('.pin').forEach(g => {
       const x0 = +g.dataset.x, y0 = +g.dataset.y;
       const x = Math.min(Math.max(x0, cur[0] + m), cur[0] + cur[2] - m);
@@ -260,7 +283,7 @@
   });
   document.getElementById('photoOpacity').oninput = e => { const p = document.getElementById('photo'); if (p) p.style.opacity = e.target.value / 100; };
   document.getElementById('showSchema').onchange = e => { document.getElementById('schema').style.display = e.target.checked ? '' : 'none'; };
-  document.getElementById('showPins').onchange = e => { document.getElementById('pinlayer').style.display = e.target.checked ? '' : 'none'; };
+  document.getElementById('showPins').onchange = e => { const v = e.target.checked ? '' : 'none'; document.getElementById('pinlayer').style.display = v; document.getElementById('dimlayer').style.display = v; };
   document.getElementById('onlyOpen').onchange = drawTable;
 
   let armed = false, armTimer;
