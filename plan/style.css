@@ -83,3 +83,19 @@ th { font-size: 13px; color: var(--muted); font-weight: 600; }
 .dim .dl { stroke-width: 2; vector-effect: non-scaling-stroke; fill: none; }
 .dim.ok .dl { stroke: var(--ok); } .dim.chk .dl { stroke: var(--chk); } .dim.unk .dl { stroke: var(--unk); }
 .dim .dt { fill: var(--text); font-weight: 700; paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; font-variant-numeric: tabular-nums; pointer-events: none; }
+
+.dgap { stroke: var(--card); stroke-width: 6; vector-effect: non-scaling-stroke; }
+.dleaf { stroke: #a9774a; stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.darc { fill: none; stroke: #a9774a; stroke-width: 1.2; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.dpanel { stroke: #8a93a8; stroke-width: 5; vector-effect: non-scaling-stroke; }
+.door.unk .dleaf, .door.unk .darc { stroke: var(--unk); }
+.door.t-C .dleaf, .door.t-C .darc { stroke: #3d7fa6; }
+.door.t-N .dleaf, .door.t-N .darc { stroke: #666f80; }
+.door.t-A .dleaf, .door.t-A .darc { stroke: #5b7cb8; }
+.door.t-WC .dleaf, .door.t-WC .darc { stroke: #c08a3e; }
+.door.t-pass .dgap { stroke-dasharray: 4 3; }
+.door.sel .dleaf, .door.sel .dpanel { stroke: var(--accent); stroke-width: 5; }
+.dmark { fill: var(--text); font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: var(--card); stroke-width: 3px; pointer-events: none; }
+#doors input[type=number], #doors select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%; }
+#doors tr { cursor: pointer; } #doors tr.sec td { background: var(--bg); font-weight: 700; cursor: default; }
+#doors td:nth-child(1) { white-space: nowrap; color: var(--muted); } #doors td:nth-child(4) { width: 100px; } #doors td:nth-child(5) { width: 130px; } #doors td:nth-child(3) { min-width: 260px; }

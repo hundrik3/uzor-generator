@@ -12,6 +12,7 @@
   let renderer, scene, camera, controls, stage, hud;
   let wallsG, floorsG, labelsG, pinsG, photoPlane, pickables = [];
   let wallMats = [];
+  let wallMat, liftMat, stairMat, edgeMat, lintelsG, doorsG, lintels = [];
   let center = new THREE.Vector3();
   let last = { c: null, d: 60 };
   const ray = typeof THREE !== 'undefined' ? new THREE.Raycaster() : null;
@@ -54,40 +55,16 @@
     scene.add(sun);
 
     floorsG = new THREE.Group(); wallsG = new THREE.Group(); labelsG = new THREE.Group(); pinsG = new THREE.Group();
-    scene.add(floorsG, wallsG, labelsG, pinsG);
+    lintelsG = new THREE.Group(); doorsG = new THREE.Group();
+    scene.add(floorsG, wallsG, lintelsG, doorsG, labelsG, pinsG);
 
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xf1f3f8, roughness: 0.95, metalness: 0 });
-    const liftMat = new THREE.MeshStandardMaterial({ color: 0xb9a7e0, roughness: 0.9 });
-    const stairMat = new THREE.MeshStandardMaterial({ color: 0xd9c08a, roughness: 0.9 });
+    wallMat = new THREE.MeshStandardMaterial({ color: 0xf1f3f8, roughness: 0.95, metalness: 0 });
+    liftMat = new THREE.MeshStandardMaterial({ color: 0xb9a7e0, roughness: 0.9 });
+    stairMat = new THREE.MeshStandardMaterial({ color: 0xd9c08a, roughness: 0.9 });
     wallMats = [wallMat, liftMat, stairMat];
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x445068, transparent: true, opacity: 0.55 });
+    edgeMat = new THREE.LineBasicMaterial({ color: 0x445068, transparent: true, opacity: 0.55 });
 
     let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
-    const segs = new Set();
-
-    function addWall(ax, ay, bx, by) {
-      const horiz = Math.abs(ay - by) < Math.abs(ax - bx);
-      let key, len, cx, cz;
-      if (horiz) {
-        const a = Math.min(ax, bx), b = Math.max(ax, bx), y = (ay + by) / 2;
-        key = `h${Math.round(y / 3)}:${Math.round(a / 4)}:${Math.round(b / 4)}`;
-        len = X(b - a) + WALL_T; cx = X((a + b) / 2); cz = Z(y);
-      } else {
-        const a = Math.min(ay, by), b = Math.max(ay, by), x = (ax + bx) / 2;
-        key = `v${Math.round(x / 3)}:${Math.round(a / 4)}:${Math.round(b / 4)}`;
-        len = X(b - a) + WALL_T; cx = X(x); cz = Z((a + b) / 2);
-      }
-      if (segs.has(key)) return;
-      segs.add(key);
-      const geo = horiz ? new THREE.BoxGeometry(len, 1, WALL_T) : new THREE.BoxGeometry(WALL_T, 1, len);
-      const m = new THREE.Mesh(geo, wallMat);
-      m.position.set(cx, 0.5, cz);
-      wallsG.add(m);
-      const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
-      e.position.copy(m.position);
-      wallsG.add(e);
-    }
-
     Object.keys(P.rects).forEach(k => {
       P.rects[k].forEach(r => {
         const [name, ax, ay, bx, by, type] = r;
@@ -97,25 +74,6 @@
           new THREE.MeshStandardMaterial({ color: COLORS[type] || COLORS.room, roughness: 1 }));
         fl.position.set(cx, -0.04, cz);
         floorsG.add(fl);
-
-        if (type === 'lift') {
-          const lm = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, 1, d * 0.94), liftMat);
-          lm.position.set(cx, 0.5, cz); wallsG.add(lm);
-        } else if (type === 'stair') {
-          if (/лестн/.test(name)) {
-            const n = 14, horizontal = w >= d, run = (horizontal ? w : d) / n;
-            for (let i = 0; i < n; i++) {
-              const hgt = (i + 1) / n * 0.55;
-              const st = new THREE.Mesh(new THREE.BoxGeometry(horizontal ? run : w * 0.9, hgt, horizontal ? d * 0.9 : run), stairMat);
-              st.position.set(horizontal ? cx - w / 2 + run * (i + 0.5) : cx, hgt / 2, horizontal ? cz : cz - d / 2 + run * (i + 0.5));
-              wallsG.add(st);
-            }
-          }
-          addWall(ax, ay, bx, ay); addWall(ax, by, bx, by); addWall(ax, ay, ax, by); addWall(bx, ay, bx, by);
-        } else {
-          addWall(ax, ay, bx, ay); addWall(ax, by, bx, by); addWall(ax, ay, ax, by); addWall(bx, ay, bx, by);
-        }
-
         if (type !== 'porch' && !/^(лестница|лифты)/.test(name)) {
           const sp = label(name, Math.min(2.2, Math.max(1.0, Math.min(w, d) * 0.35)));
           sp.position.set(cx, 0.35, cz);
@@ -123,10 +81,7 @@
         }
       });
     });
-    Object.values(P.outlines).forEach(o => {
-      addWall(o[0], o[1], o[2], o[1]); addWall(o[0], o[3], o[2], o[3]);
-      addWall(o[0], o[1], o[0], o[3]); addWall(o[2], o[1], o[2], o[3]);
-    });
+    buildWalls();
 
     // фото на полу (по желанию)
     photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(X(P.size.w), Z(P.size.h)),
@@ -139,6 +94,121 @@
     center.set(X((x1 + x2) / 2), 0, Z((y1 + y2) / 2));
     refreshPins();
     setWallHeight();
+  }
+
+  const DOOR_PX = 1000 * K; // мм на пиксель фото для проёмов: ширина в px = мм / 50
+
+  function clearGroup(g) {
+    while (g.children.length) { const c = g.children[0]; g.remove(c); if (c.geometry) c.geometry.dispose(); }
+  }
+
+  // Стены с проёмами под двери, перемычки над дверями, створки (открываются в коридор), лифты, лестницы.
+  function buildWalls() {
+    [wallsG, lintelsG, doorsG].forEach(clearGroup);
+    lintels = [];
+    const segs = new Set();
+    const ds = window.PlanApp.doors();
+
+    function piece(horiz, a, b, fixed) {
+      const len = X(b - a) + WALL_T;
+      const geo = horiz ? new THREE.BoxGeometry(len, 1, WALL_T) : new THREE.BoxGeometry(WALL_T, 1, len);
+      const m = new THREE.Mesh(geo, wallMat);
+      m.position.set(horiz ? X((a + b) / 2) : X(fixed), 0.5, horiz ? Z(fixed) : Z((a + b) / 2));
+      wallsG.add(m);
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+      e.position.copy(m.position);
+      wallsG.add(e);
+    }
+    function addWall(ax, ay, bx, by) {
+      const horiz = Math.abs(ay - by) < Math.abs(ax - bx);
+      const a = horiz ? Math.min(ax, bx) : Math.min(ay, by), b = horiz ? Math.max(ax, bx) : Math.max(ay, by);
+      const fixed = horiz ? (ay + by) / 2 : (ax + bx) / 2;
+      const key = `${horiz ? 'h' : 'v'}${Math.round(fixed / 3)}:${Math.round(a / 4)}:${Math.round(b / 4)}`;
+      if (segs.has(key)) return;
+      segs.add(key);
+      let pieces = [[a, b]];
+      ds.forEach(d => {
+        if (d.o !== (horiz ? 'h' : 'v') || Math.abs((horiz ? d.y : d.x) - fixed) > 6) return;
+        const c = horiz ? d.x : d.y, hw = d.w / DOOR_PX / 2;
+        if (c < a - 1 || c > b + 1) return;
+        const g1 = c - hw, g2 = c + hw, np = [];
+        pieces.forEach(([p, q]) => {
+          if (g2 <= p || g1 >= q) np.push([p, q]);
+          else { if (g1 > p) np.push([p, g1]); if (g2 < q) np.push([g2, q]); }
+        });
+        pieces = np;
+      });
+      pieces.forEach(([p, q]) => { if (q - p > 0.5) piece(horiz, p, q, fixed); });
+    }
+
+    Object.keys(P.rects).forEach(k => {
+      P.rects[k].forEach(r => {
+        const [name, ax, ay, bx, by, type] = r;
+        const w = X(bx - ax), d = Z(by - ay), cx = X((ax + bx) / 2), cz = Z((ay + by) / 2);
+        if (type === 'lift') {
+          const lm = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, 1, d * 0.94), liftMat);
+          lm.position.set(cx, 0.5, cz); wallsG.add(lm);
+        } else if (type === 'stair' && /лестн/.test(name)) {
+          const n = 14, horizontal = w >= d, run = (horizontal ? w : d) / n;
+          for (let i = 0; i < n; i++) {
+            const hgt = (i + 1) / n * 0.55;
+            const st = new THREE.Mesh(new THREE.BoxGeometry(horizontal ? run : w * 0.9, hgt, horizontal ? d * 0.9 : run), stairMat);
+            st.position.set(horizontal ? cx - w / 2 + run * (i + 0.5) : cx, hgt / 2, horizontal ? cz : cz - d / 2 + run * (i + 0.5));
+            wallsG.add(st);
+          }
+        }
+        addWall(ax, ay, bx, ay); addWall(ax, by, bx, by); addWall(ax, ay, ax, by); addWall(bx, ay, bx, by);
+      });
+    });
+    Object.values(P.outlines).forEach(o => {
+      addWall(o[0], o[1], o[2], o[1]); addWall(o[0], o[3], o[2], o[3]);
+      addWall(o[0], o[1], o[0], o[3]); addWall(o[2], o[1], o[2], o[3]);
+    });
+
+    // перемычки над дверями и сами створки
+    ds.forEach(d => {
+      const G = window.PlanApp.doorGeom(d);
+      const dh = d.h / 1000, wm = d.w / 1000;
+      const horiz = d.o === 'h';
+      const lin = new THREE.Mesh(horiz ? new THREE.BoxGeometry(wm + 0.02, 1, WALL_T) : new THREE.BoxGeometry(WALL_T, 1, wm + 0.02), wallMat);
+      lin.position.set(X(d.x), 0.5, Z(d.y));
+      lintelsG.add(lin); lintels.push({ mesh: lin, dh });
+      const mat = new THREE.MeshStandardMaterial({ color: d.color, roughness: 0.7 });
+      if (d.leaves === 0) {
+        if (d.t !== 'pass') {
+          const pan = new THREE.Mesh(horiz ? new THREE.BoxGeometry(wm, dh, 0.05) : new THREE.BoxGeometry(0.05, dh, wm), mat);
+          pan.position.set(X(d.x), dh / 2, Z(d.y)); doorsG.add(pan);
+        }
+        return;
+      }
+      G.leaves.forEach(l => {
+        const dx = X(l.open[0] - l.hinge[0]), dz = Z(l.open[1] - l.hinge[1]);
+        const len = Math.hypot(dx, dz);
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(len, dh, 0.05), mat);
+        leaf.position.set(X((l.hinge[0] + l.open[0]) / 2), dh / 2, Z((l.hinge[1] + l.open[1]) / 2));
+        leaf.rotation.y = -Math.atan2(dz, dx);
+        doorsG.add(leaf);
+      });
+    });
+    setLintels();
+  }
+
+  function setLintels() {
+    const H = wallHeight();
+    lintels.forEach(l => {
+      const hh = H - l.dh;
+      l.mesh.visible = hh > 0.02;
+      l.mesh.scale.y = Math.max(hh, 0.001);
+      l.mesh.position.y = l.dh + Math.max(hh, 0.001) / 2;
+    });
+  }
+
+  function refreshDoors() {
+    if (!inited || failed) return;
+    buildWalls();
+    setGlass();
+    wallsG.visible = lintelsG.visible = $('wallOn').checked;
+    doorsG.visible = $('doors3d').checked;
   }
 
   function refreshPins() {
@@ -174,6 +244,7 @@
   function setWallHeight() {
     const h = wallHeight();
     wallsG.scale.y = h;
+    setLintels();
     $('wallHv').textContent = h.toFixed(2).replace('.', ',') + ' м';
   }
   function setGlass() {
@@ -210,7 +281,8 @@
 
     $('wallH').oninput = setWallHeight;
     $('wallGlass').onchange = setGlass;
-    $('wallOn').onchange = e => { wallsG.visible = e.target.checked; };
+    $('wallOn').onchange = e => { wallsG.visible = lintelsG.visible = e.target.checked; };
+    $('doors3d').onchange = e => { doorsG.visible = e.target.checked; };
     $('photoFloor').onchange = e => {
       if (e.target.checked && !photoPlane.material.map) {
         photoPlane.material.map = new THREE.TextureLoader().load(window.PLAN_PHOTO);
@@ -285,6 +357,7 @@
     },
     hide() { running = false; },
     focus,
-    refreshPins
+    refreshPins,
+    refreshDoors
   };
 })();

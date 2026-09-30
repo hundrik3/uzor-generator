@@ -58,7 +58,36 @@
         c: e.c || p[6], line: p[7] || null };
     });
   }
-  window.PlanApp = { pins, SEC_KEYS, get section() { return section; } };
+  const MMPX = 50; // ~мм на пиксель фото (фото снято под углом, значение приблизительное)
+  function doors() {
+    const cnt = {};
+    return P.doors.map(d => {
+      const e = edits['door:' + d[0]] || {};
+      const t = P.doorTypes[e.t] ? e.t : d[6];
+      const ty = P.doorTypes[t];
+      const off = Number(e.off) || 0;
+      const horiz = d[4] === 'h';
+      cnt[d[1]] = (cnt[d[1]] || 0) + 1;
+      return { id: d[0], n: cnt[d[1]], label: 'Д' + PREFIX[d[1]] + cnt[d[1]], sec: d[1],
+        x: d[2] + (horiz ? off : 0), y: d[3] + (horiz ? 0 : off), o: d[4], s: d[5], t, room: d[7],
+        c: e.c || d[8], off, w: ty.w, h: ty.h, leaves: ty.leaves, mark: ty.mark, color: ty.color, tname: ty.name };
+    });
+  }
+  // Геометрия створок в px фото: проём a–b в стене, створки открываются в сторону коридора (s).
+  function doorGeom(d) {
+    const w = d.w / MMPX;
+    const ax = d.o === 'h' ? [1, 0] : [0, 1];
+    const nx = d.o === 'h' ? [0, d.s] : [d.s, 0];
+    const Pt = (a, n) => [d.x + ax[0] * a + nx[0] * n, d.y + ax[1] * a + nx[1] * n];
+    const L = [];
+    if (d.leaves === 1) L.push({ hinge: Pt(-w / 2, 0), open: Pt(-w / 2, w), closed: Pt(w / 2, 0), len: w });
+    if (d.leaves === 2) {
+      L.push({ hinge: Pt(-w / 2, 0), open: Pt(-w / 2, w / 2), closed: Pt(0, 0), len: w / 2 });
+      L.push({ hinge: Pt(w / 2, 0), open: Pt(w / 2, w / 2), closed: Pt(0, 0), len: w / 2 });
+    }
+    return { w, leaves: L, a: Pt(-w / 2, 0), b: Pt(w / 2, 0) };
+  }
+  window.PlanApp = { pins, doors, doorGeom, SEC_KEYS, get section() { return section; } };
 
   // ---------- легенда ----------
   function drawLegend() {
@@ -106,6 +135,26 @@
     });
     Object.values(P.outlines).forEach(o => el('rect', { x: o[0], y: o[1], width: o[2] - o[0], height: o[3] - o[1], class: 'wall' }, gs));
 
+    const gdoor = el('g', { id: 'doorlayer' }, svg);
+    gdoor.style.display = document.getElementById('showDoors').checked ? '' : 'none';
+    doors().forEach(d => {
+      if (section !== 'all' && d.sec !== section) return;
+      const g = el('g', { class: 'door ' + d.c + ' t-' + d.t, 'data-id': d.id }, gdoor);
+      const G = doorGeom(d);
+      const ttl = el('title', {}, g); ttl.textContent = `${d.label} · ${d.room} · ${d.tname} ${d.w}×${d.h}`;
+      el('line', { class: 'dgap', x1: G.a[0], y1: G.a[1], x2: G.b[0], y2: G.b[1] }, g);
+      if (d.leaves === 0) {
+        el('line', { class: 'dpanel', x1: G.a[0], y1: G.a[1], x2: G.b[0], y2: G.b[1] }, g);
+      }
+      G.leaves.forEach(l => {
+        el('line', { class: 'dleaf', x1: l.hinge[0], y1: l.hinge[1], x2: l.open[0], y2: l.open[1] }, g);
+        const cr = (l.closed[0] - l.hinge[0]) * (l.open[1] - l.hinge[1]) - (l.closed[1] - l.hinge[1]) * (l.open[0] - l.hinge[0]);
+        el('path', { class: 'darc', d: `M${l.closed[0]} ${l.closed[1]} A${l.len} ${l.len} 0 0 ${cr > 0 ? 1 : 0} ${l.open[0]} ${l.open[1]}` }, g);
+      });
+      const tx = el('text', { class: 'dmark', x: d.x, y: d.y }, g); tx.textContent = d.mark;
+      tx.dataset.nx = d.o === 'h' ? 0 : d.s; tx.dataset.ny = d.o === 'h' ? d.s : 0;
+    });
+
     const gd = el('g', { id: 'dimlayer' }, svg);
     gd.style.display = document.getElementById('showPins').checked ? '' : 'none';
     pins().forEach(p => {
@@ -140,6 +189,11 @@
     if (!layer || !cur) return;
     const s = Math.max(0.35, Math.min(1.6, cur[2] / 1500));
     const m = 14 * s;
+    document.querySelectorAll('#doorlayer .dmark').forEach(t => {
+      const x = +t.getAttribute('x'), y = +t.getAttribute('y');
+      t.setAttribute('font-size', 18 * s);
+      t.setAttribute('transform', `translate(${(+t.dataset.nx) * -14 * s} ${(+t.dataset.ny) * -14 * s + 6 * s})`);
+    });
     document.querySelectorAll('#dimlayer .dim').forEach(g => {
       const [x1, y1, x2, y2] = g.dataset.l.split(',').map(Number);
       const horiz = Math.abs(x2 - x1) >= Math.abs(y2 - y1);
@@ -225,6 +279,22 @@
     t.innerHTML = h;
   }
 
+  function drawDoorTable() {
+    const t = document.getElementById('doors');
+    const only = document.getElementById('onlyOpen').checked;
+    let h = '<tr><th>№</th><th>Помещение</th><th>Тип (ширина × высота, мм)</th><th>Сдвиг, px</th><th>Статус</th></tr>';
+    let last = null;
+    doors().forEach(d => {
+      if (only && d.c === 'ok') return;
+      if (d.sec !== last) { h += `<tr class="sec"><td colspan="5">${SEC_NAMES[d.sec]}</td></tr>`; last = d.sec; }
+      h += `<tr data-door="${d.id}"><td><span class="dot ${d.c}"></span> ${d.label}</td><td>${esc(d.room)}</td>` +
+        `<td><select data-f="t">${Object.keys(P.doorTypes).map(k => { const y = P.doorTypes[k]; return `<option value="${k}"${k === d.t ? ' selected' : ''}>${y.mark} ${y.name} ${y.w}×${y.h}</option>`; }).join('')}</select></td>` +
+        `<td><input type="number" step="1" data-f="off" value="${d.off}"></td>` +
+        `<td><select data-f="c">${['ok', 'chk', 'unk'].map(k => `<option value="${k}"${k === d.c ? ' selected' : ''}>${CONF[k]}</option>`).join('')}</select></td></tr>`;
+    });
+    t.innerHTML = h;
+  }
+
   function select(id, scroll) {
     selected = id;
     document.querySelectorAll('.pin.sel').forEach(g => g.classList.remove('sel'));
@@ -284,7 +354,8 @@
   document.getElementById('photoOpacity').oninput = e => { const p = document.getElementById('photo'); if (p) p.style.opacity = e.target.value / 100; };
   document.getElementById('showSchema').onchange = e => { document.getElementById('schema').style.display = e.target.checked ? '' : 'none'; };
   document.getElementById('showPins').onchange = e => { const v = e.target.checked ? '' : 'none'; document.getElementById('pinlayer').style.display = v; document.getElementById('dimlayer').style.display = v; };
-  document.getElementById('onlyOpen').onchange = drawTable;
+  document.getElementById('showDoors').onchange = e => { document.getElementById('doorlayer').style.display = e.target.checked ? '' : 'none'; };
+  document.getElementById('onlyOpen').onchange = () => { drawTable(); drawDoorTable(); };
 
   let armed = false, armTimer;
   const resetBtn = document.getElementById('resetAll');
@@ -295,8 +366,8 @@
       return;
     }
     clearTimeout(armTimer); armed = false; resetBtn.textContent = 'Сбросить правки';
-    edits = {}; save(); drawTable(); drawSvg();
-    if (window.Plan3D) window.Plan3D.refreshPins();
+    edits = {}; save(); drawTable(); drawDoorTable(); drawSvg();
+    if (window.Plan3D) { window.Plan3D.refreshPins(); window.Plan3D.refreshDoors(); }
   };
 
   function toast(msg) {
@@ -320,9 +391,30 @@
     copyOut(out);
   };
   document.getElementById('exportJson').onclick = () => {
-    copyOut(JSON.stringify({ legend: P.legend, other: P.other, pins: pins() }, null, 2));
+    copyOut(JSON.stringify({ legend: P.legend, other: P.other, doors: doors().map(d => ({ id: d.label, room: d.room, type: d.t, w: d.w, h: d.h, x: d.x, y: d.y, status: CONF[d.c] })), pins: pins() }, null, 2));
   };
 
+  document.getElementById('doors').addEventListener('input', e => {
+    const tr = e.target.closest('tr[data-door]'); if (!tr) return;
+    const id = 'door:' + tr.dataset.door, f = e.target.dataset.f;
+    edits[id] = edits[id] || {}; edits[id][f] = e.target.value; save();
+    if (f === 'c') drawDoorTable();
+    drawSvg();
+    if (window.Plan3D) window.Plan3D.refreshDoors();
+  });
+  document.getElementById('doors').addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-door]');
+    if (tr && !['SELECT', 'INPUT'].includes(e.target.tagName)) {
+      const d = doors().find(x => x.id === tr.dataset.door);
+      if (mode !== '2d') setMode('2d');
+      if (d && section !== 'all' && d.sec !== section) { section = d.sec; drawTabs(); }
+      drawSvg();
+      document.querySelectorAll('.door.sel').forEach(g => g.classList.remove('sel'));
+      const g = svg.querySelector(`.door[data-id="${tr.dataset.door}"]`); if (g) g.classList.add('sel');
+      svg.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
+
   computeViews();
-  drawLegend(); drawTabs(); drawSvg(); drawTable();
+  drawLegend(); drawTabs(); drawSvg(); drawTable(); drawDoorTable();
 })();

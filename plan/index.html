@@ -40,6 +40,7 @@
           <input type="range" id="photoOpacity" min="0" max="100" value="55">
         </label>
         <label class="ctl"><input type="checkbox" id="showSchema" checked> Схема</label>
+        <label class="ctl"><input type="checkbox" id="showDoors" checked> Двери</label>
         <label class="ctl"><input type="checkbox" id="showPins" checked> Отметки</label>
       </div>
       <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема 3 этажа"></svg>
@@ -58,6 +59,7 @@
         <label class="ctl"><input type="checkbox" id="wallGlass"> Прозрачные стены</label>
         <label class="ctl"><input type="checkbox" id="wallOn" checked> Стены</label>
         <label class="ctl"><input type="checkbox" id="photoFloor"> Фото на полу</label>
+        <label class="ctl"><input type="checkbox" id="doors3d" checked> Двери</label>
         <label class="ctl"><input type="checkbox" id="pin3d" checked> Отметки</label>
         <label class="ctl"><input type="checkbox" id="lab3d" checked> Подписи</label>
       </div>
@@ -69,6 +71,12 @@
         Высота стен одна на весь этаж: известна только высота потолка в переходе (3956).
         Положения дверей неизвестны, поэтому стены без проёмов.</p>
     </div>
+  </section>
+
+  <section class="card">
+    <h2>Двери</h2>
+    <p class="hint">Все двери открываются в коридор. Положение взято по карандашным засечкам на стенах. Тип и сдвиг вдоль стены можно править, схема и 3D перерисуются.</p>
+    <div class="tablewrap"><table id="doors"></table></div>
   </section>
 
   <section class="card">
