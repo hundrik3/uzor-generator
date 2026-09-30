@@ -153,25 +153,40 @@
   document.getElementById('showSchema').onchange = e => { document.getElementById('schema').style.display = e.target.checked ? '' : 'none'; };
   document.getElementById('showPins').onchange = e => { document.getElementById('pinlayer').style.display = e.target.checked ? '' : 'none'; };
   document.getElementById('onlyOpen').onchange = drawTable;
-  document.getElementById('resetAll').onclick = () => {
-    if (!confirm('Сбросить все правки в таблице?')) return;
+  let armed = false, armTimer;
+  const resetBtn = document.getElementById('resetAll');
+  resetBtn.onclick = () => {
+    if (!armed) {
+      armed = true; resetBtn.textContent = 'Точно сбросить?';
+      armTimer = setTimeout(() => { armed = false; resetBtn.textContent = 'Сбросить правки'; }, 4000);
+      return;
+    }
+    clearTimeout(armTimer); armed = false; resetBtn.textContent = 'Сбросить правки';
     edits = {}; save(); drawTable(); drawSvg();
   };
 
-  function download(name, text, type) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text], { type }));
-    a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  function toast(msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t); setTimeout(() => t.remove(), 1800);
+  }
+  function copyOut(text) {
+    const done = () => toast('Скопировано');
+    const fallback = () => {
+      let ta = document.getElementById('out');
+      if (!ta) { ta = document.createElement('textarea'); ta.id = 'out'; ta.readOnly = true; document.getElementById('exportBox').appendChild(ta); }
+      ta.value = text; ta.focus(); ta.select();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
   }
   document.getElementById('exportCsv').onclick = () => {
     const q = s => '"' + String(s).replace(/"/g, '""') + '"';
-    let out = '﻿id;участок;значение_мм;как_понял;статус\n';
+    let out = 'id;участок;значение_мм;как_понял;статус\n';
     pins().forEach(p => { out += [p.label, SEC_NAMES[p.sec], p.v, p.m, CONF[p.c]].map(q).join(';') + '\n'; });
-    download('plan-3etazh.csv', out, 'text/csv;charset=utf-8');
+    copyOut(out);
   };
   document.getElementById('exportJson').onclick = () => {
-    download('plan-3etazh.json', JSON.stringify({ legend: P.legend, other: P.other, pins: pins() }, null, 2), 'application/json');
+    copyOut(JSON.stringify({ legend: P.legend, other: P.other, pins: pins() }, null, 2));
   };
 
   drawLegend(); drawTabs(); drawSvg(); drawTable();
