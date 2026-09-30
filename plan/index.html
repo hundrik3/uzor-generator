@@ -10,7 +10,7 @@
 <header class="top">
   <h1>3 этаж — обмеры, мм</h1>
   <p class="sub">Только карандашные цифры. Печатные размеры БТИ не используются.
-    Кружки на схеме — отметки с листа: <b class="dot ok"></b> прочитано уверенно,
+    Кружки — отметки с листа: <b class="dot ok"></b> прочитано уверенно,
     <b class="dot chk"></b> проверить, <b class="dot unk"></b> не разобрано.</p>
 </header>
 
@@ -22,14 +22,53 @@
 
   <section class="card">
     <div class="bar">
+      <div class="tabs" id="modes">
+        <button id="mode2d" class="on">Схема</button>
+        <button id="mode3d">3D модель</button>
+      </div>
       <div class="tabs" id="tabs"></div>
-      <label class="ctl">Фото
-        <input type="range" id="photoOpacity" min="0" max="100" value="55">
-      </label>
-      <label class="ctl"><input type="checkbox" id="showSchema" checked> Схема</label>
-      <label class="ctl"><input type="checkbox" id="showPins" checked> Отметки</label>
     </div>
-    <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема 3 этажа"></svg>
+
+    <div id="view2d">
+      <div class="bar">
+        <div class="zoom">
+          <button id="zoomIn" title="Приблизить">+</button>
+          <button id="zoomOut" title="Отдалить">−</button>
+          <button id="zoomReset" title="Показать целиком">⟲</button>
+        </div>
+        <label class="ctl">Фото
+          <input type="range" id="photoOpacity" min="0" max="100" value="55">
+        </label>
+        <label class="ctl"><input type="checkbox" id="showSchema" checked> Схема</label>
+        <label class="ctl"><input type="checkbox" id="showPins" checked> Отметки</label>
+      </div>
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема 3 этажа"></svg>
+      <p class="hint">Колесо мыши или «+» / «−» — масштаб, перетаскивание — сдвиг.</p>
+    </div>
+
+    <div id="view3d" hidden>
+      <div class="bar">
+        <div class="zoom">
+          <button id="camTop">Сверху</button>
+          <button id="camIso">Со стороны</button>
+        </div>
+        <label class="ctl">Высота стен
+          <input type="range" id="wallH" min="20" max="80" value="40"> <output id="wallHv">3,96 м</output>
+        </label>
+        <label class="ctl"><input type="checkbox" id="wallGlass"> Прозрачные стены</label>
+        <label class="ctl"><input type="checkbox" id="wallOn" checked> Стены</label>
+        <label class="ctl"><input type="checkbox" id="photoFloor"> Фото на полу</label>
+        <label class="ctl"><input type="checkbox" id="pin3d" checked> Отметки</label>
+        <label class="ctl"><input type="checkbox" id="lab3d" checked> Подписи</label>
+      </div>
+      <div class="stage3d" id="stage3d">
+        <div class="hud" id="hud">Наведите на кружок — увидите цифру</div>
+      </div>
+      <p class="hint">Левая кнопка — вращать, правая или два пальца — сдвиг, колесо — масштаб.
+        Масштаб модели ≈ 48 мм на пиксель фото, он сверен с карандашными цифрами (ширина переходов 2568–2580, стены 7310–7331).
+        Высота стен одна на весь этаж: известна только высота потолка в переходе (3956).
+        Положения дверей неизвестны, поэтому стены без проёмов.</p>
+    </div>
   </section>
 
   <section class="card">
@@ -47,7 +86,10 @@
   </section>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 <script src="data.js"></script>
 <script src="plan.js"></script>
+<script src="plan3d.js"></script>
 </body>
 </html>
