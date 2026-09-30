@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>План 3 этажа — обмеры</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>3 этаж — обмеры, мм</h1>
+  <p class="sub">Только карандашные цифры. Печатные размеры БТИ не используются.
+    Кружки на схеме — отметки с листа: <b class="dot ok"></b> прочитано уверенно,
+    <b class="dot chk"></b> проверить, <b class="dot unk"></b> не разобрано.</p>
+</header>
+
+<main>
+  <section class="legend card">
+    <h2>Двери и общие размеры</h2>
+    <table id="legend"></table>
+  </section>
+
+  <section class="card">
+    <div class="bar">
+      <div class="tabs" id="tabs"></div>
+      <label class="ctl">Фото
+        <input type="range" id="photoOpacity" min="0" max="100" value="55">
+      </label>
+      <label class="ctl"><input type="checkbox" id="showSchema" checked> Схема</label>
+      <label class="ctl"><input type="checkbox" id="showPins" checked> Отметки</label>
+    </div>
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема 3 этажа"></svg>
+  </section>
+
+  <section class="card">
+    <div class="bar">
+      <h2>Отметки с листа</h2>
+      <div class="spacer"></div>
+      <label class="ctl"><input type="checkbox" id="onlyOpen"> Только непроверенные</label>
+      <button id="exportCsv">Скачать CSV</button>
+      <button id="exportJson">Скачать JSON</button>
+      <button id="resetAll" class="ghost">Сбросить правки</button>
+    </div>
+    <p class="hint">Клик по строке — показать отметку на схеме. Значение, смысл и статус можно править, правки сохраняются в браузере.</p>
+    <div class="tablewrap"><table id="pins"></table></div>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="plan.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+:root {
+  --bg: #f4f5f7; --card: #fff; --text: #1d2330; --muted: #667085; --line: #d5d9e0;
+  --ok: #1a9c5b; --chk: #e08a00; --unk: #d23b3b;
+  --room: #eef2f8; --corr: #dff0e6; --stair: #f3e9d4; --lift: #e5dcf3; --porch: #ececec;
+  --wall: #445068; --accent: #2f5fd0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171d; --card: #1c2028; --text: #e6e9ef; --muted: #98a1b3; --line: #343a47;
+    --room: #232a38; --corr: #1f3a2d; --stair: #3a3222; --lift: #322b45; --porch: #2a2d33;
+    --wall: #8b97b2; --accent: #7aa2ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.top { padding: 18px 16px 4px; max-width: 1400px; margin: 0 auto; }
+h1 { margin: 0 0 4px; font-size: 22px; }
+h2 { margin: 0; font-size: 17px; }
+.sub, .hint { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+main { max-width: 1400px; margin: 0 auto; padding: 12px 16px 40px; display: grid; gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; }
+.dot.ok { background: var(--ok); } .dot.chk { background: var(--chk); } .dot.unk { background: var(--unk); }
+
+.bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 10px; }
+.spacer { flex: 1; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button, button { font: inherit; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.ghost { color: var(--muted); }
+.ctl { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+
+#svg { width: 100%; height: auto; aspect-ratio: 1900 / 950; background: var(--card); border: 1px solid var(--line); border-radius: 8px; display: block; touch-action: pan-y; }
+.wall { fill: none; stroke: var(--wall); stroke-width: 3; }
+.r { stroke: var(--wall); stroke-width: 1.5; }
+.r.room { fill: var(--room); } .r.corr { fill: var(--corr); } .r.stair { fill: var(--stair); }
+.r.lift { fill: var(--lift); } .r.porch { fill: var(--porch); }
+.rl { font-size: 13px; fill: var(--muted); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.pin circle { stroke: #fff; stroke-width: 2; cursor: pointer; }
+.pin.ok circle { fill: var(--ok); } .pin.chk circle { fill: var(--chk); } .pin.unk circle { fill: var(--unk); }
+.pin text.n { font-size: 10px; fill: #fff; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.pin .tip { display: none; pointer-events: none; }
+.pin .tip rect { fill: #111; opacity: .92; }
+.pin .tip text { fill: #fff; font-size: 16px; font-weight: 600; }
+.pin:hover .tip, .pin.sel .tip { display: block; }
+.pin.sel circle { stroke: var(--accent); stroke-width: 4; }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; }
+#legend td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#legend .mark { display: inline-block; min-width: 26px; text-align: center; font-weight: 700; background: var(--room); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+#pins tr { cursor: pointer; }
+#pins tr.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+#pins tr.sec td { background: var(--bg); font-weight: 700; cursor: default; }
+#pins input[type=text], #pins select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%; }
+#pins td:nth-child(1) { white-space: nowrap; color: var(--muted); }
+#pins td:nth-child(2) { min-width: 140px; }
+#pins td:nth-child(3) { min-width: 260px; }
+#pins td:nth-child(4) { width: 130px; }
+@media (max-width: 640px) { h1 { font-size: 19px; } #svg { aspect-ratio: 1 / 1.1; } }
